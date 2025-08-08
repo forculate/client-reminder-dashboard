@@ -1,0 +1,131 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import csv
+import os
+
+# Client data ko store karne ke liye global list
+clients = []
+CSV_FILE = "clients.csv"
+
+# CSV file ko load karne ke liye function
+def load_from_csv():
+    """CSV file se data load karta hai."""
+    if os.path.exists(CSV_FILE):
+        with open(CSV_FILE, mode="r", newline='') as file:
+            reader = csv.reader(file)
+            next(reader, None)  # Header row ko skip karein
+            for row in reader:
+                # String data ko unki asal data type mein convert karein
+                try:
+                    name, email, phone, received, cost, profit = row
+                    clients.append((name, email, phone, float(received), float(cost), float(profit)))
+                    tree.insert('', 'end', values=row)
+                except (ValueError, IndexError):
+                    messagebox.showwarning("File Error", "CSV file mein ghalat data hai.")
+                    break
+
+# Data ko CSV file mein save karne ke liye function
+def save_to_csv():
+    """Client data ko CSV file mein save karta hai."""
+    with open(CSV_FILE, mode="w", newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Name", "Email", "Phone", "Received", "Cost", "Profit"])
+        writer.writerows(clients)
+    messagebox.showinfo("Success", "Data CSV file mein save ho gaya hai.")
+
+# Client ko add aur GUI ko update karne ke liye function
+def add_client():
+    """Input fields se client data jama karta hai aur use display karta hai."""
+    name = name_entry.get()
+    email = email_entry.get()
+    phone = phone_entry.get()
+
+    if not name or not email:
+        messagebox.showwarning("Input Error", "Naam aur Email zaruri hain.")
+        return
+
+    try:
+        received = float(received_entry.get())
+        cost = float(cost_entry.get())
+    except ValueError:
+        messagebox.showerror("Input Error", "Aamdani aur Kharcha sirf numbers hone chahiye!")
+        return
+
+    profit = received - cost
+    new_client = (name, email, phone, received, cost, profit)
+    clients.append(new_client)
+    tree.insert('', 'end', values=new_client)
+    clear_entries()
+    
+    # Save button ke bajaye, har add par automatic save karein
+    save_to_csv()
+
+# Input fields ko saaf karne ke liye function
+def clear_entries():
+    """Tamam input fields ko saaf karta hai."""
+    name_entry.delete(0, tk.END)
+    email_entry.delete(0, tk.END)
+    phone_entry.delete(0, tk.END)
+    received_entry.delete(0, tk.END)
+    cost_entry.delete(0, tk.END)
+    name_entry.focus() # Focus wapas naam field par le jayein
+
+# GUI window setup
+root = tk.Tk()
+root.title("Client Dashboard")
+root.geometry("800x600")
+root.configure(bg="#f0f0f0")
+
+# Main frame for a cleaner layout
+main_frame = tk.Frame(root, padx=10, pady=10, bg="#f0f0f0")
+main_frame.pack(fill="both", expand=True)
+
+# Input section frame
+input_frame = tk.LabelFrame(main_frame, text="Client Information", padx=10, pady=10, bg="#e0e0e0")
+input_frame.pack(fill="x", pady=10)
+
+# Input Labels
+tk.Label(input_frame, text="Naam:", bg="#e0e0e0").grid(row=0, column=0, sticky="w", padx=5, pady=2)
+tk.Label(input_frame, text="Email:", bg="#e0e0e0").grid(row=1, column=0, sticky="w", padx=5, pady=2)
+tk.Label(input_frame, text="Phone:", bg="#e0e0e0").grid(row=2, column=0, sticky="w", padx=5, pady=2)
+tk.Label(input_frame, text="Aamdani:", bg="#e0e0e0").grid(row=3, column=0, sticky="w", padx=5, pady=2)
+tk.Label(input_frame, text="Kharcha:", bg="#e0e0e0").grid(row=4, column=0, sticky="w", padx=5, pady=2)
+
+# Input Entries
+name_entry = tk.Entry(input_frame)
+email_entry = tk.Entry(input_frame)
+phone_entry = tk.Entry(input_frame)
+received_entry = tk.Entry(input_frame)
+cost_entry = tk.Entry(input_frame)
+
+name_entry.grid(row=0, column=1, padx=5, pady=2, sticky="ew")
+email_entry.grid(row=1, column=1, padx=5, pady=2, sticky="ew")
+phone_entry.grid(row=2, column=1, padx=5, pady=2, sticky="ew")
+received_entry.grid(row=3, column=1, padx=5, pady=2, sticky="ew")
+cost_entry.grid(row=4, column=1, padx=5, pady=2, sticky="ew")
+
+# Buttons frame
+button_frame = tk.Frame(input_frame, bg="#e0e0e0")
+button_frame.grid(row=5, column=0, columnspan=2, pady=10)
+
+# Add Client Button
+tk.Button(button_frame, text="Add Client", command=add_client, bg="#4CAF50", fg="white").pack(side="left", padx=5)
+
+# Clear Button
+tk.Button(button_frame, text="Clear", command=clear_entries, bg="#f44336", fg="white").pack(side="left", padx=5)
+
+# Table View section
+table_frame = tk.LabelFrame(main_frame, text="Client Records", padx=10, pady=10)
+table_frame.pack(fill="both", expand=True)
+
+columns = ("Name", "Email", "Phone", "Received", "Cost", "Profit")
+tree = ttk.Treeview(table_frame, columns=columns, show='headings')
+for col in columns:
+    tree.heading(col, text=col)
+    tree.column(col, anchor="center")
+tree.pack(fill="both", expand=True)
+
+# Load data when the app starts
+load_from_csv()
+
+root.mainloop()
